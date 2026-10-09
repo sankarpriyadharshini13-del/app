@@ -1,0 +1,18 @@
+{
+  "expo": {
+    "name": "Maison",
+    "slug": "maison",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": false
+    },
+    "android": {},
+    "plugins": [
+      "expo-asset",
+      "expo-font"
+    ]
+  }
+}

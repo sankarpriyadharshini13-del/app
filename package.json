@@ -1,0 +1,12 @@
+{
+  "name": "maison-api",
+  "private": true,
+  "scripts": { "seed": "node scripts/seed.js" },
+  "dependencies": {
+    "@prisma/client": "^5.22.0",
+    "@vercel/postgres": "^0.10.0",
+    "express": "^4.19.2"
+  },
+  "devDependencies": { "prisma": "^5.22.0" },
+  "engines": { "node": ">=18" }
+}
