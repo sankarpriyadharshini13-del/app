@@ -1,6 +1,18 @@
 const { createPool } = require('@vercel/postgres');
-const pool = createPool({ connectionString: process.env.DATABASE_URL || process.env.POSTGRES_URL });
-const sql = pool.sql.bind(pool);
+let pool;
+
+function getPool() {
+  const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL;
+  if (!connectionString) {
+    throw new Error('Set DATABASE_URL or POSTGRES_URL in the Vercel project environment variables.');
+  }
+  if (!pool) pool = createPool({ connectionString });
+  return pool;
+}
+
+function sql(strings, ...values) {
+  return getPool().sql(strings, ...values);
+}
 
 // name, category, price, mrp, rating, featured
 const PRODUCTS = [

@@ -10,7 +10,8 @@ import Animated, { FadeIn, FadeInDown, FadeOut, FadeOutLeft, LinearTransition, S
 import { api } from './src/api'
 
 type P = { id: number; name: string; category: string; price: number; mrp: number; rating: number; image: string; featured: boolean }
-type Ctx = { products: P[]; loading: boolean; cart: Record<number, number>; wish: number[]; setQty: (id: number, q: number) => void; toggleWish: (id: number) => void; clear: () => void }
+type CartEntry = { id: number; qty: number }
+type Ctx = { products: P[]; loading: boolean; productsError: string | null; cart: Record<number, number>; wish: number[]; setQty: (id: number, q: number) => void; toggleWish: (id: number) => void; clear: () => void }
 const S = createContext<Ctx>(null!)
 const useS = () => useContext(S)
 const inr = (n: number) => '₹' + n.toLocaleString('en-IN')
@@ -81,7 +82,7 @@ function Skeleton({ w, h, r = 16, style }: { w: number | string; h: number; r?: 
 const Title = ({ children }: { children: string }) => <Text style={{ fontSize: 32, fontWeight: '800', letterSpacing: -0.5, paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12 }}>{children}</Text>
 
 function Home() {
-  const { products, loading } = useS()
+  const { products, loading, productsError } = useS()
   const { width } = useWindowDimensions()
   const w = (width - 52) / 2
   const [cat, setCat] = useState('All'); const [q, setQ] = useState('')
@@ -121,7 +122,7 @@ function Home() {
         {loading ? Array.from({ length: 6 }).map((_, i) => <View key={i} style={{ width: w, gap: 8 }}><Skeleton w={w} h={w * 1.2} r={24} /><Skeleton w={w * 0.7} h={12} r={6} /><Skeleton w={w * 0.4} h={12} r={6} /></View>)
           : list.map((p, i) => <Card key={p.id} p={p} i={i} w={w} />)}
       </View>
-      {!loading && !list.length && <Text style={{ textAlign: 'center', color: '#aaa', marginTop: 40 }}>No products found</Text>}
+      {!loading && !list.length && <Text style={{ textAlign: 'center', color: productsError ? '#b91c1c' : '#aaa', marginTop: 40 }}>{productsError || 'No products found'}</Text>}
     </ScrollView>)
 }
 
@@ -229,12 +230,24 @@ const TABS = [['home', 'home'], ['cart', 'bag'], ['wish', 'heart'], ['me', 'pers
 function Root() {
   const insets = useSafeAreaInsets(); const { width } = useWindowDimensions()
   const [tab, setTab] = useState<(typeof TABS)[number][0]>('home')
-  const [products, setProducts] = useState<P[]>([]); const [loading, setLoading] = useState(true)
+  const [products, setProducts] = useState<P[]>([]); const [loading, setLoading] = useState(true); const [productsError, setProductsError] = useState<string | null>(null)
   const [cart, setCart] = useState<Record<number, number>>({}); const [wish, setWish] = useState<number[]>([])
   useEffect(() => {
-    Promise.all([api('products'), api('cart'), api('wishlist')]).then(([p, c, w]) => {
-      setProducts(p); setCart(Object.fromEntries(c.map((r: any) => [r.id, r.qty]))); setWish(w.map((r: any) => r.id))
-    }).catch(console.warn).finally(() => setLoading(false))
+    let cancelled = false
+    api('products').then((p: P[]) => {
+      if (!cancelled) { setProducts(p); setProductsError(null) }
+    }).catch((error: unknown) => {
+      if (!cancelled) setProductsError(error instanceof Error ? error.message : 'Unable to load products')
+    }).finally(() => {
+      if (!cancelled) setLoading(false)
+    })
+    api('cart').then((c: CartEntry[]) => {
+      if (!cancelled) setCart(Object.fromEntries(c.map((r) => [r.id, r.qty])))
+    }).catch(console.warn)
+    api('wishlist').then((w: { id: number }[]) => {
+      if (!cancelled) setWish(w.map((r) => r.id))
+    }).catch(console.warn)
+    return () => { cancelled = true }
   }, [])
   const setQty = (id: number, q: number) => { setCart((c) => { const n = { ...c }; if (q > 0) n[id] = q; else delete n[id]; return n }); api(`cart/${id}`, 'PUT', { qty: q }).catch(console.warn) }
   const toggleWish = (id: number) => { const on = wish.includes(id); setWish((w) => (on ? w.filter((x) => x !== id) : [...w, id])); api(`wishlist/${id}`, on ? 'DELETE' : 'POST').catch(console.warn) }
@@ -247,7 +260,7 @@ function Root() {
   const pill = useAnimatedStyle(() => ({ transform: [{ translateX: px.value }] }))
   const Page = { home: Home, cart: Cart, wish: Wishlist, me: Profile }[tab]
   return (
-    <S.Provider value={{ products, loading, cart, wish, setQty, toggleWish, clear }}>
+    <S.Provider value={{ products, loading, productsError, cart, wish, setQty, toggleWish, clear }}>
       <View style={{ flex: 1, backgroundColor: BG, paddingTop: insets.top }}>
         <Animated.View key={tab} entering={FadeIn.duration(180)} style={{ flex: 1 }}><Page /></Animated.View>
         <View style={{ position: 'absolute', left: 16, right: 16, bottom: Math.max(insets.bottom, 12), height: 64, borderRadius: 32, backgroundColor: 'rgba(255,255,255,.97)', padding: 8, flexDirection: 'row', ...shadow }}>

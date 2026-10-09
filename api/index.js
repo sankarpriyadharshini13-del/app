@@ -21,11 +21,20 @@ app.use((req, res, next) => {
   }
   next();
 });
+app.get('/api/health', (_q, res) => res.json({ ok: true }));
+app.get('/api/health/db', async (_q, res) => {
+  try {
+    await ensure();
+    res.json({ ok: true, database: 'connected' });
+  } catch (e) {
+    console.error(e);
+    res.status(503).json({ ok: false, error: 'Database unavailable. Check DATABASE_URL or POSTGRES_URL in Vercel.' });
+  }
+});
 app.use(async (req, res, next) => {
   try { await ensure(); req.uid = String(req.header('x-uid') || 'demo').slice(0, 64); next(); }
-  catch (e) { console.error(e); res.status(500).json({ error: 'Database not connected. Add Postgres storage in Vercel.' }); }
+  catch (e) { console.error(e); res.status(503).json({ error: 'Database unavailable. Check DATABASE_URL or POSTGRES_URL in Vercel.' }); }
 });
-app.get('/api/health', (_q, r) => r.json({ ok: true }));
 app.use('/api/products', require('./_routes/products'));
 app.use('/api/cart', require('./_routes/cart'));
 app.use('/api/wishlist', require('./_routes/wishlist'));
