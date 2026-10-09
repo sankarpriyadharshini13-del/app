@@ -6,7 +6,8 @@
    `DATABASE_URL` or `POSTGRES_URL` is present in the project's Environment Variables.
 3. Set `CORS_ORIGINS` to `http://localhost:8081,http://localhost:8082`
    for local web development (add your deployed website origin too, comma-separated).
-4. Redeploy. Tables + 15 products are created automatically on first request.
+4. Redeploy. Tables are created automatically on the first request, and any
+   missing demo products are added without duplicating existing products.
 5. Check `https://YOUR-APP.vercel.app/api/health/db`, then
    `https://YOUR-APP.vercel.app/api/products`.
 

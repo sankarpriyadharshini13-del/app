@@ -34,15 +34,17 @@ const PRODUCTS = [
 ];
 
 async function seed() {
-  const { rows } = await sql`SELECT COUNT(*)::int AS c FROM products`;
-  if (rows[0].c) return 0;
+  let added = 0;
   for (let i = 0; i < PRODUCTS.length; i++) {
     const [n, c, p, m, r, f] = PRODUCTS[i];
     const img = `https://picsum.photos/seed/shop${i + 1}/600/760`;
-    await sql`INSERT INTO products(name,category,price,mrp,rating,image,featured)
-              VALUES(${n},${c},${p},${m},${r},${img},${!!f})`;
+    const { rows } = await sql`INSERT INTO products(name,category,price,mrp,rating,image,featured)
+              SELECT ${n},${c},${p},${m},${r},${img},${!!f}
+              WHERE NOT EXISTS (SELECT 1 FROM products WHERE name=${n})
+              RETURNING id`;
+    added += rows.length;
   }
-  return PRODUCTS.length;
+  return added;
 }
 
 let ready;
