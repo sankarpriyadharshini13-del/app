@@ -8,16 +8,28 @@ const allowedOrigins = new Set(
     .map((origin) => origin.trim())
     .filter(Boolean)
 );
+function isAllowedOrigin(origin) {
+  if (allowedOrigins.has(origin)) return true;
+  try {
+    const parsed = new URL(origin);
+    return parsed.origin === origin &&
+      parsed.protocol === 'http:' &&
+      (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1');
+  } catch {
+    return false;
+  }
+}
 app.use((req, res, next) => {
   const origin = req.header('Origin');
-  if (origin && allowedOrigins.has(origin)) {
+  const allowed = origin && isAllowedOrigin(origin);
+  if (allowed) {
     res.setHeader('Access-Control-Allow-Origin', origin);
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-uid');
     res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
     res.setHeader('Vary', 'Origin');
   }
   if (req.method === 'OPTIONS') {
-    return res.sendStatus(!origin || allowedOrigins.has(origin) ? 204 : 403);
+    return res.sendStatus(!origin || allowed ? 204 : 403);
   }
   next();
 });

@@ -4,8 +4,9 @@
 1. Push this repo to GitHub → Import on Vercel (no settings needed).
 2. Connect a **Postgres** database to the Vercel project. Ensure either
    `DATABASE_URL` or `POSTGRES_URL` is present in the project's Environment Variables.
-3. Set `CORS_ORIGINS` to `http://localhost:8081,http://localhost:8082`
-   for local web development (add your deployed website origin too, comma-separated).
+3. Set `CORS_ORIGINS` to any deployed website origins that should call the API,
+   comma-separated. Local Expo web origins (`http://localhost` and
+   `http://127.0.0.1` on any port) are allowed automatically in development.
 4. Redeploy. Tables are created automatically on the first request, and any
    missing demo products are added without duplicating existing products.
 5. Check `https://YOUR-APP.vercel.app/api/health/db`, then
